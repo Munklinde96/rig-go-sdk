@@ -8,19 +8,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bufbuild/connect-go"
+	"connectrpc.com/connect"
 	"github.com/rigdev/rig-go-api/api/v1/authentication"
 	"github.com/rigdev/rig-go-api/api/v1/authentication/authenticationconnect"
 	"github.com/rigdev/rig-go-api/api/v1/build/buildconnect"
 	"github.com/rigdev/rig-go-api/api/v1/capsule/capsuleconnect"
 	"github.com/rigdev/rig-go-api/api/v1/cluster/clusterconnect"
-	"github.com/rigdev/rig-go-api/api/v1/database/databaseconnect"
+	"github.com/rigdev/rig-go-api/api/v1/environment/environmentconnect"
 	"github.com/rigdev/rig-go-api/api/v1/group/groupconnect"
 	"github.com/rigdev/rig-go-api/api/v1/project/projectconnect"
 	projectsettingsconnect "github.com/rigdev/rig-go-api/api/v1/project/settings/settingsconnect"
 	"github.com/rigdev/rig-go-api/api/v1/service_account/service_accountconnect"
-	storagesettingsconnect "github.com/rigdev/rig-go-api/api/v1/storage/settings/settingsconnect"
-	"github.com/rigdev/rig-go-api/api/v1/storage/storageconnect"
 	usersettingsconnect "github.com/rigdev/rig-go-api/api/v1/user/settings/settingsconnect"
 	"github.com/rigdev/rig-go-api/api/v1/user/userconnect"
 	"golang.org/x/net/http2"
@@ -40,12 +38,6 @@ type Client interface {
 	ServiceAccount() service_accountconnect.ServiceClient
 	// Group service for managing groups and associating users to them.
 	Group() groupconnect.ServiceClient
-	// Storage service for interacting with the Storage backends, such as creating buckets and uploading files.
-	Storage() storageconnect.ServiceClient
-	// StorageSettings service for configuring the Storage backends.
-	StorageSettings() storagesettingsconnect.ServiceClient
-	// Database service for managing databases related to the project.
-	Database() databaseconnect.ServiceClient
 	// Capsule API for managing the lifecycle of Capsules.
 	Capsule() capsuleconnect.ServiceClient
 	// Project API for configuring the overall settings of the project.
@@ -54,7 +46,10 @@ type Client interface {
 	ProjectSettings() projectsettingsconnect.ServiceClient
 	// Cluster service for managing the Rig cluster
 	Cluster() clusterconnect.ServiceClient
+
 	Build() buildconnect.ServiceClient
+
+	Environment() environmentconnect.ServiceClient
 
 	// Set the access- and refresh token pair. This will use the underlying SessionManager.
 	// The client will refresh the tokens in the background as needed.
@@ -85,14 +80,12 @@ type client struct {
 	userSettings    usersettingsconnect.ServiceClient
 	service_account service_accountconnect.ServiceClient
 	group           groupconnect.ServiceClient
-	storage         storageconnect.ServiceClient
-	storageSettings storagesettingsconnect.ServiceClient
-	database        databaseconnect.ServiceClient
 	capsule         capsuleconnect.ServiceClient
 	project         projectconnect.ServiceClient
 	projectSettings projectsettingsconnect.ServiceClient
 	cluster         clusterconnect.ServiceClient
 	build           buildconnect.ServiceClient
+	environment     environmentconnect.ServiceClient
 }
 
 var _h2cClient = &http.Client{
@@ -150,14 +143,12 @@ func NewClient(opts ...Option) Client {
 		user:            userconnect.NewServiceClient(cfg.hc, cfg.host, connect.WithInterceptors(ics...)),
 		userSettings:    usersettingsconnect.NewServiceClient(cfg.hc, cfg.host, connect.WithInterceptors(ics...)),
 		group:           groupconnect.NewServiceClient(cfg.hc, cfg.host, connect.WithInterceptors(ics...)),
-		storage:         storageconnect.NewServiceClient(cfg.hc, cfg.host, connect.WithInterceptors(ics...)),
-		storageSettings: storagesettingsconnect.NewServiceClient(cfg.hc, cfg.host, connect.WithInterceptors(ics...)),
-		database:        databaseconnect.NewServiceClient(cfg.hc, cfg.host, connect.WithInterceptors(ics...)),
 		capsule:         capsuleconnect.NewServiceClient(cfg.hc, cfg.host, connect.WithInterceptors(ics...)),
 		project:         projectconnect.NewServiceClient(cfg.hc, cfg.host, connect.WithInterceptors(ics...)),
 		projectSettings: projectsettingsconnect.NewServiceClient(cfg.hc, cfg.host, connect.WithInterceptors(ics...)),
 		cluster:         clusterconnect.NewServiceClient(cfg.hc, cfg.host, connect.WithInterceptors(ics...)),
 		build:           buildconnect.NewServiceClient(cfg.hc, cfg.host, connect.WithInterceptors(ics...)),
+		environment:     environmentconnect.NewServiceClient(cfg.hc, cfg.host, connect.WithInterceptors(ics...)),
 	}
 }
 
@@ -185,18 +176,6 @@ func (c *client) Group() groupconnect.ServiceClient {
 	return c.group
 }
 
-func (c *client) Storage() storageconnect.ServiceClient {
-	return c.storage
-}
-
-func (c *client) StorageSettings() storagesettingsconnect.ServiceClient {
-	return c.storageSettings
-}
-
-func (c *client) Database() databaseconnect.ServiceClient {
-	return c.database
-}
-
 func (c *client) Capsule() capsuleconnect.ServiceClient {
 	return c.capsule
 }
@@ -215,6 +194,10 @@ func (c *client) Cluster() clusterconnect.ServiceClient {
 
 func (c *client) Build() buildconnect.ServiceClient {
 	return c.build
+}
+
+func (c *client) Environment() environmentconnect.ServiceClient {
+	return c.environment
 }
 
 func getEnv(key, def string) string {

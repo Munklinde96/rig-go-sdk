@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/bufbuild/connect-go"
+	"connectrpc.com/connect"
 	"github.com/rigdev/rig-go-api/api/v1/authentication"
 	"github.com/rigdev/rig-go-api/model"
 	"github.com/rigdev/rig-go-sdk"
@@ -19,10 +19,7 @@ func LoginExample() {
 	userEmail := "foobar@example.com"
 	userPassword := "mypassword"
 
-	apiKey := "31aef3ea-affa-47b9-94cb-8c7d552c055b"
-
 	client := rig.NewClient()
-
 	ctx := context.Background()
 
 	loginRes, err := client.Authentication().Login(ctx, &connect.Request[authentication.LoginRequest]{
@@ -35,7 +32,6 @@ func LoginExample() {
 						},
 					},
 					Password: userPassword,
-					ApiKey:   apiKey,
 				},
 			},
 		},
